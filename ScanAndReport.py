@@ -28,6 +28,9 @@ import yfinance as yf
 # numpy is used to calculate the intersections of the 50 day and 200 day simple moving average
 import numpy as np
 
+# matplotlib is used to check data accuracy
+import matplotlib.pyplot as plt
+
 
 # get the ticker symbols of the stocks in the S&P 500
 df500 = pd.read_csv('sp-500-index-01-12-2023.csv')["Symbol"]
@@ -57,10 +60,36 @@ lastYr = (date.today()-timedelta(days=365)).isoformat()
 
 # calculate crosses in the past 30 days
 def crosses(ticker):
-    rawClose = yf.download(ticker, start=lastYr, end=tmrw)["Close"]
-    ma200 = ta.sma(rawClose, 200, talib=True)
-    ma50 = ta.sma(rawClose, 50, talib=True)
-    intersections = np.argwhere(np.diff(np.sign(ma50 - ma200))).flatten()
+    rawClose = yf.download(ticker, start=lastYr, end=today)["Close"]
+    sma50 = rawClose.rolling(window=50).mean()
+    sma200 = rawClose.rolling(window=200).mean()
+
+    intersections = np.argwhere(np.diff(np.sign(sma50 - sma200))).flatten()
+    newIntersections = intersections[199:]
+    
+    buySignalIndex = []
+    sellSignalIndex = []
+
+    for i in newIntersections:
+        sma50Slope = (sma50[i+1] - sma50[i-1])/2
+        sma200Slope = (sma200[i+1] - sma200[i-1])/2
+        if (sma50Slope > sma200Slope):
+            # Golden Cross
+            buySignalIndex.append(i)
+        else:
+            # Death Cross
+            sellSignalIndex.append(i)
+
+    plt.plot(rawClose)
+    plt.plot(sma200)
+    plt.plot(sma50)
+    plt.ylabel('Raw Close Price (in $)')
+    plt.xlabel('Date')
+    plt.xticks(rotation = 45)
+    plt.title(ticker + " Raw Close, 50 day SMA, & 200 day SMA")
+    plt.legend(["Adj Close", "200D MA", "50D MA"], loc="upper left")
+    plt.show()
+
 
     
 
@@ -71,5 +100,4 @@ for i in range(len(df1500)):
     crosses(df1500[i])
 '''
 
-print(df1500[0])
-crosses(df1500[0])
+crosses("NKE")
