@@ -142,7 +142,5 @@ for i in range(len(df1500)):
     # gets the tickers of all 1505 stocks
     crosses(df1500[i])
 
-#crosses("NKE")
-
 df = pd.DataFrame(finalData)
 df.to_csv("GoldenAndDeathCrosses.csv", index=False)
