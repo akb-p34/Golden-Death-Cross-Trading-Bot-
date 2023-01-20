@@ -57,26 +57,26 @@ lastMo = (date.today()-timedelta(days=30)).isoformat()
 # get the date one year ago
 lastYr = (date.today()-timedelta(days=365)).isoformat()
 
-
-# buy list
-buyList = {"Ticker":[], "Date":[]}
-
-# sell list
-sellList = {"Ticker":[], "Date":[]}
+# data collected after filtering for crosses under 31 days old to be converted to a csv file
+finalData = {"Ticker":[], "Date":[], "Signal":[]}
 
 
 # calculate crosses in the past 30 days
 def crosses(ticker):
+    # grabs close price data of the stock for 1 year
     rawClose = yf.download(ticker, start=lastYr, end=tmrw)["Close"]
+    # calculates the simple moving 50 day average on the raw close price
     sma50 = rawClose.rolling(window=50).mean()
+    # calculates the simple moving 200 day average on the raw close price
     sma200 = rawClose.rolling(window=200).mean()
-
+    # finds any crosses on the 1 year graph after 200 days into that 1 year have passed
     intersections = np.argwhere(np.diff(np.sign(sma50 - sma200))).flatten()
     newIntersections = intersections[199:]
-    
+    # used to retrieve indexes of golden or death crosses
     buySignalIndex = []
     sellSignalIndex = []
-
+    
+    # categorizes each cross into a golden or death cross by comparing the slopes of the SMAs 
     for i in newIntersections:
         sma50Slope = (sma50[i+1] - sma50[i-1])/2
         sma200Slope = (sma200[i+1] - sma200[i-1])/2
@@ -86,13 +86,16 @@ def crosses(ticker):
         else:
             # Death Cross
             sellSignalIndex.append(i)
-
+    
+    # adjusts the buySignalIndex to the day after to get the correct date on when to buy the stock at open
     for i in range(len(buySignalIndex)):
         buySignalIndex[i] = buySignalIndex[i] + 1
     
+    # adjusts the sellSignalIndex to the day after to get the correct date on when to sell the stock at open
     for i in range(len(sellSignalIndex)):
         sellSignalIndex[i] = sellSignalIndex[i] + 1
     
+    # filters and removes any buy signals that are older than 30 days, otherwise it appends data to finalData
     for i in buySignalIndex:
         # gets each part of the date into a list; splits up the YR, DAY, MO into different elements in a list
         crossDate = str(rawClose.index[i].date()).split("-")
@@ -108,7 +111,10 @@ def crosses(ticker):
         # compares dates and removes if the Golden Cross is older than 1mo
         if(d1<d2):
             buySignalIndex.remove(i)
-        
+        else:
+            break
+    
+    # filters and removes any sell signals that are older than 30 days, otherwise it appends data to finalData
     for i in sellSignalIndex:
         # gets each part of the date into a list; splits up the YR, DAY, MO into different elements in a list
         crossDate = str(rawClose.index[i].date()).split("-")
@@ -125,7 +131,7 @@ def crosses(ticker):
         if(d1<d2):
             sellSignalIndex.remove(i)
 
-    """plt.plot(rawClose)
+    '''plt.plot(rawClose)
     plt.plot(sma200)
     plt.plot(sma50)
     plt.ylabel('Raw Close Price (in $)')
@@ -133,7 +139,7 @@ def crosses(ticker):
     plt.xticks(rotation = 45)
     plt.title(ticker + " Raw Close, 50 day SMA, & 200 day SMA")
     plt.legend(["Adj Close", "200D MA", "50D MA"], loc="upper left")
-    plt.show()"""
+    plt.show()'''
 
 
 '''
