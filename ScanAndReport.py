@@ -17,7 +17,7 @@ What does it do:
 import pandas as pd
 
 # datetime is used to get the current day and the date 30 days ago
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 # pandas_ta is used for the 50 day and 200 day simple moving average
 import pandas_ta as ta
@@ -58,9 +58,16 @@ lastMo = (date.today()-timedelta(days=30)).isoformat()
 lastYr = (date.today()-timedelta(days=365)).isoformat()
 
 
+# buy list
+buyList = {"Ticker":[], "Date":[]}
+
+# sell list
+sellList = {"Ticker":[], "Date":[]}
+
+
 # calculate crosses in the past 30 days
 def crosses(ticker):
-    rawClose = yf.download(ticker, start=lastYr, end=today)["Close"]
+    rawClose = yf.download(ticker, start=lastYr, end=tmrw)["Close"]
     sma50 = rawClose.rolling(window=50).mean()
     sma200 = rawClose.rolling(window=200).mean()
 
@@ -80,7 +87,45 @@ def crosses(ticker):
             # Death Cross
             sellSignalIndex.append(i)
 
-    plt.plot(rawClose)
+    for i in range(len(buySignalIndex)):
+        buySignalIndex[i] = buySignalIndex[i] + 1
+    
+    for i in range(len(sellSignalIndex)):
+        sellSignalIndex[i] = sellSignalIndex[i] + 1
+    
+    for i in buySignalIndex:
+        # gets each part of the date into a list; splits up the YR, DAY, MO into different elements in a list
+        crossDate = str(rawClose.index[i].date()).split("-")
+        lastMoDate = lastMo.split("-")
+        # converts all three entries in both lists to ints
+        for j in range(len(crossDate)):
+            crossDate[j] = int(crossDate[j])
+        for j in range(len(lastMoDate)):
+            lastMoDate[j] = int(lastMoDate[j])
+        # variables used to compare dates
+        d1 = datetime(crossDate[0], crossDate[1], crossDate[2])
+        d2 = datetime(lastMoDate[0], lastMoDate[1], lastMoDate[2])
+        # compares dates and removes if the Golden Cross is older than 1mo
+        if(d1<d2):
+            buySignalIndex.remove(i)
+        
+    for i in sellSignalIndex:
+        # gets each part of the date into a list; splits up the YR, DAY, MO into different elements in a list
+        crossDate = str(rawClose.index[i].date()).split("-")
+        lastMoDate = lastMo.split("-")
+        # converts all three entries in both lists to ints
+        for j in range(len(crossDate)):
+            crossDate[j] = int(crossDate[j])
+        for j in range(len(lastMoDate)):
+            lastMoDate[j] = int(lastMoDate[j])
+        # variables used to compare dates
+        d1 = datetime(crossDate[0], crossDate[1], crossDate[2])
+        d2 = datetime(lastMoDate[0], lastMoDate[1], lastMoDate[2])
+        # compares dates and removes if the Golden Cross is older than 1mo
+        if(d1<d2):
+            sellSignalIndex.remove(i)
+
+    """plt.plot(rawClose)
     plt.plot(sma200)
     plt.plot(sma50)
     plt.ylabel('Raw Close Price (in $)')
@@ -88,10 +133,8 @@ def crosses(ticker):
     plt.xticks(rotation = 45)
     plt.title(ticker + " Raw Close, 50 day SMA, & 200 day SMA")
     plt.legend(["Adj Close", "200D MA", "50D MA"], loc="upper left")
-    plt.show()
+    plt.show()"""
 
-
-    
 
 '''
 # 'main' function
