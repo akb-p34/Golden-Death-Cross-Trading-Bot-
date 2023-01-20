@@ -112,7 +112,9 @@ def crosses(ticker):
         if(d1<d2):
             buySignalIndex.remove(i)
         else:
-            break
+            finalData["Ticker"].append(ticker)
+            finalData["Date"].append(str(rawClose.index[i].date()))
+            finalData["Signal"].append("BUY")
     
     # filters and removes any sell signals that are older than 30 days, otherwise it appends data to finalData
     for i in sellSignalIndex:
@@ -130,23 +132,17 @@ def crosses(ticker):
         # compares dates and removes if the Golden Cross is older than 1mo
         if(d1<d2):
             sellSignalIndex.remove(i)
+        else:
+            finalData["Ticker"].append(ticker)
+            finalData["Date"].append(str(rawClose.index[i].date()))
+            finalData["Signal"].append("SELL")
 
-    '''plt.plot(rawClose)
-    plt.plot(sma200)
-    plt.plot(sma50)
-    plt.ylabel('Raw Close Price (in $)')
-    plt.xlabel('Date')
-    plt.xticks(rotation = 45)
-    plt.title(ticker + " Raw Close, 50 day SMA, & 200 day SMA")
-    plt.legend(["Adj Close", "200D MA", "50D MA"], loc="upper left")
-    plt.show()'''
-
-
-'''
 # 'main' function
 for i in range(len(df1500)):
     # gets the tickers of all 1505 stocks
     crosses(df1500[i])
-'''
 
-crosses("NKE")
+#crosses("NKE")
+
+df = pd.DataFrame(finalData)
+df.to_csv("GoldenAndDeathCrosses.csv", index=False)
